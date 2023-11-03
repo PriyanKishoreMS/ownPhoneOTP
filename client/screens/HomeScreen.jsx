@@ -1,10 +1,10 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import {SafeAreaView, Text, View} from 'react-native';
 import SmsAndroid from 'react-native-get-sms-android';
 import tw from 'twrnc';
 import CustomDetails from '../components/CustomDetails';
 
-const HomeScreen = () => {
+const HomeScreen = ({data}) => {
   const [sent, setSent] = useState(false);
   const [message, setMessage] = useState('');
   const [mobile, setMobile] = useState('');
@@ -26,6 +26,19 @@ const HomeScreen = () => {
       },
     );
   };
+
+  useEffect(() => {
+    if (data) {
+      const {mobile, otp} = JSON.parse(data);
+      setMobile(mobile);
+      setMessage(`Your OTP is ${otp}`);
+    }
+  }, [data]);
+
+  useEffect(() => {
+    sendMessage();
+  }, [mobile, message]);
+
   return (
     <SafeAreaView style={tw`bg-slate-100 h-full`}>
       <View style={tw`flex items-center justify-center mt-10`}>
