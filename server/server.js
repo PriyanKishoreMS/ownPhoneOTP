@@ -2,6 +2,8 @@ const express = require("express");
 const http = require("http");
 const WebSocket = require("ws");
 const cors = require("cors");
+const LocalStorage = require("node-localstorage").LocalStorage;
+const localStorage = new LocalStorage("./scratch");
 
 const app = express();
 app.use(express.json());
@@ -48,7 +50,38 @@ app.post("/otp", (req, res) => {
 			return;
 		}
 		hostConnection.send(JSON.stringify(data));
+		const itemWithExpiry = {
+			value: otp,
+			expiry: Date.now() + 60000,
+		};
+		localStorage.setItem(mobile, JSON.stringify(itemWithExpiry));
 		res.status(200).json(data);
+	} catch (err) {
+		console.log(err);
+		res.status(500).send("Internal Server Error");
+	}
+});
+
+app.post("/verify", (req, res) => {
+	try {
+		const { mobile, otp } = req.body;
+		const storedOtp = localStorage.getItem(mobile);
+		if (!storedOtp) {
+			res.status(400).send("OTP not present");
+			return;
+		}
+		const parsedOtp = JSON.parse(storedOtp);
+		if (parsedOtp.expiry < Date.now()) {
+			localStorage.removeItem(mobile);
+			res.status(400).send("OTP expired");
+			return;
+		}
+		if (parsedOtp.value === otp) {
+			localStorage.removeItem(mobile);
+			res.status(200).send("OTP verified");
+		} else {
+			res.status(400).send("OTP not verified");
+		}
 	} catch (err) {
 		console.log(err);
 		res.status(500).send("Internal Server Error");
